@@ -6,7 +6,7 @@ import uuid
 import os
 from dotenv import load_dotenv
 
-COLD_START_PROMPT = "Generate a unique tweet. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS."
+COLD_START_PROMPT = "Generate an extremely unique tweet. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end."
 
 class Tweet(BaseModel):
     username: str
@@ -95,7 +95,8 @@ async def generate_fake_tweet():
                 "role": "user",
                 "content": prompt
             }
-        ]
+        ],
+        temperature=1.0
     )
     print(completion)
 
