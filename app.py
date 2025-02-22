@@ -6,21 +6,27 @@ import uuid
 import json
 import os
 from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
+import base64
+
 
 COLD_START_PROMPT = "Generate an extremely unique tweet that is meant to garner a reaction (either positive or negative). Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end."
-COLD_START_PROMPT_PAIR =  "Generate two tweets that are extremely different from each other. Keep them under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end of them."
+COLD_START_PROMPT_PAIR = "Generate two tweets that are extremely different from each other. Keep them under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end of them."
 load_dotenv()
 open_ai_key = os.getenv("OPEN_AI_KEY")
 client = OpenAI(api_key=open_ai_key)
+
 
 class Tweet(BaseModel):
     username: str
     content: str
     tweet_id: str
 
+
 class TweetPair(BaseModel):
     tweet_1: str
     tweet_2: str
+
 
 app = FastAPI()
 
@@ -32,6 +38,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.on_event("startup")
 async def startup_event():
     app.state.liked_tweets = set()
@@ -39,22 +46,25 @@ async def startup_event():
     app.state.tweets = {}
     app.state.user_description = None
 
+
 def warm_prompt():
     system_prompt = """
 Generate a unique tweet that is tailored to the interests of the user. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS.
 Check out a list of example liked and disliked tweets to cater to the user. With 10% probability, please generate something completely different from the likes and dislikes.
 """
 
-    liked_tweets = "\n".join([
-        f"- {app.state.tweets[t].content}" for t in app.state.liked_tweets
-    ])
+    liked_tweets = "\n".join(
+        [f"- {app.state.tweets[t].content}" for t in app.state.liked_tweets]
+    )
 
-    disliked_tweets = "\n".join([
-        f"- {app.state.tweets[t].content}" for t in app.state.disliked_tweets
-    ])
+    disliked_tweets = "\n".join(
+        [f"- {app.state.tweets[t].content}" for t in app.state.disliked_tweets]
+    )
 
     if app.state.user_description:
-        system_prompt += f"\n<user_description>{app.state.user_description}\n</user_description>"
+        system_prompt += (
+            f"\n<user_description>{app.state.user_description}\n</user_description>"
+        )
 
     if len(liked_tweets) > 0:
         system_prompt += f"\n<liked_tweets>\n{liked_tweets}\n</liked_tweets>"
@@ -63,17 +73,28 @@ Check out a list of example liked and disliked tweets to cater to the user. With
 
     return system_prompt
 
+
 @app.post("/submit_photo")
 async def submit_photo(file: UploadFile = File(...)):
     try:
-        # Save the uploaded file to a directory
-        file_location = f"uploads/{file.filename}"
+        # Define the upload folder relative to the current working directory
+        upload_folder = os.path.join(os.getcwd(), "uploads")
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+
+        # Sanitize the filename to remove any unsafe characters
+        filename = secure_filename(file.filename)
+        file_location = os.path.join(upload_folder, filename)
+
+        # Save the uploaded file to the uploads directory
         with open(file_location, "wb") as buffer:
             buffer.write(await file.read())
 
         # Call OpenAI to summarize the picture
         with open(file_location, "rb") as image_file:
             image_data = image_file.read()
+            # Convert the image data to a base64 encoded string to ensure JSON serializability.
+            encoded_image_data = base64.b64encode(image_data).decode("utf-8")
             completion = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
@@ -81,16 +102,16 @@ async def submit_photo(file: UploadFile = File(...)):
                     {
                         "role": "user",
                         "content": "Based on this photo, write a paragraph description about the person who submitted it.",
-                        "image": image_data
-                    }
+                        "image": encoded_image_data,
+                    },
                 ],
-                temperature=0.5
+                temperature=0.5,
             )
             summary = completion.choices[0].message.content
             app.state.user_description = summary
 
-        # Return a success response with the summary
-        return {"filename": file.filename, "summary": summary, "success": True}
+        # Return a success response with the sanitized filename and summary
+        return {"filename": filename, "summary": summary, "success": True}
     except Exception as e:
         return {"error": str(e), "success": False}
 
@@ -105,7 +126,8 @@ async def like_tweet(tweet_id: str):
         return {"tweet_id": tweet_id, "success": True}
     except Exception:
         return {"tweet_id": tweet_id, "success": False}
-    
+
+
 @app.post("/dislike_tweet/{tweet_id}")
 async def dislike_tweet(tweet_id: str):
     try:
@@ -118,7 +140,6 @@ async def dislike_tweet(tweet_id: str):
         return {"tweet_id": tweet_id, "success": False}
 
 
-
 @app.get("/generate_fake_tweet", response_model=Tweet)
 async def generate_fake_tweet():
     if len(app.state.tweets) < 5:
@@ -129,12 +150,9 @@ async def generate_fake_tweet():
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
-            {
-                "role": "user",
-                "content": prompt
-            }
+            {"role": "user", "content": prompt},
         ],
-        temperature=1.0
+        temperature=1.0,
     )
     print(completion)
 
@@ -143,6 +161,7 @@ async def generate_fake_tweet():
     tweet_object = Tweet(username="ben brooks", content=content, tweet_id=tweet_id)
     app.state.tweets[tweet_id] = tweet_object
     return tweet_object
+
 
 @app.get("/generate_fake_tweet_pair", response_model=Tweet)
 async def generate_fake_tweet_pair():
@@ -154,13 +173,10 @@ async def generate_fake_tweet_pair():
         model="gpt-4o-mini-2024-07-18",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
-            {
-                "role": "user",
-                "content": prompt
-            }
+            {"role": "user", "content": prompt},
         ],
         response_format=TweetPair,
-        temperature=1.0
+        temperature=1.0,
     )
     print(completion.choices[0].message.content)
 
@@ -169,6 +185,3 @@ async def generate_fake_tweet_pair():
     tweet_object = Tweet(username="ben brooks", content=content, tweet_id=tweet_id)
     app.state.tweets[tweet_id] = tweet_object
     return tweet_object
-
-
-
