@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import base64
+from faker import Faker
 
 CONVERSATION_TOPICS = [
     "Travel Experiences",
@@ -109,7 +110,7 @@ def warm_prompt():
     random_topic = random.choice(CONVERSATION_TOPICS)
     random_tone = random.choice(TONE_LIST)
     system_prompt = f"""
-Generate a controversial tweet about {random_topic} in a {random_tone} tone through the lens of the user's interests as described below. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. DO NOT END THE TWEET WITH A QUESTION. DO NOT START THE TWEET WITH 'just'.
+Generate a controversial tweet through the lens of the user's interests as described below. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. DO NOT END THE TWEET WITH A QUESTION. DO NOT START THE TWEET WITH 'just'.
 
 The tweet's uniqueness should be with respect to the tweet's listed below (if they exist).
     """
@@ -221,27 +222,8 @@ async def generate_fake_tweet():
 
     tweet_id = str(uuid.uuid4())
     content = completion.choices[0].message.content
-    tweet_object = Tweet(username="ben brooks", content=content, tweet_id=tweet_id)
+    fake = Faker()
+    tweet_object = Tweet(username=fake.name(), content=content, tweet_id=tweet_id)
     app.state.tweets[tweet_id] = tweet_object
     return tweet_object
-
-
-@app.get("/generate_fake_tweet_pair", response_model=Tweet)
-async def generate_fake_tweet_pair():
-    prompt = warm_prompt()
-    completion = client.beta.chat.completions.parse(
-        model="gpt-4o-mini-2024-07-18",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt},
-        ],
-        response_format=TweetPair,
-        temperature=1.0,
-    )
-    print(completion.choices[0].message.content)
-
-    tweet_id = str(uuid.uuid4())
-    content = json.loads(completion.choices[0].message.content)
-    tweet_object = Tweet(username="ben brooks", content=content, tweet_id=tweet_id)
-    app.state.tweets[tweet_id] = tweet_object
-    return tweet_object
+    
