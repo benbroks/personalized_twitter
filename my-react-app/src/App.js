@@ -9,6 +9,8 @@ import './App.scss'
 function App() {
   const [tweets, setTweets] = useState([])
   const [tweetPair, setTweetPair] = useState(null)
+  const [likedTweets, setLikedTweets] = useState([])       // array of tweet_ids that are liked
+  const [dislikedTweets, setDislikedTweets] = useState([]) // array of tweet_ids that are disliked
   const fileInputRef = useRef(null)
 
   const generateFakeTweet = async () => {
@@ -28,9 +30,7 @@ function App() {
   }
 
   const handleOpenFileDialog = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
-    }
+    fileInputRef.current && fileInputRef.current.click()
   }
 
   const handleFileUpload = async (event) => {
@@ -38,7 +38,7 @@ function App() {
     if (!file) return
 
     const formData = new FormData()
-    formData.append("file", file)
+    formData.append('file', file)
 
     try {
       const response = await fetch('http://localhost:8000/submit_photo', {
@@ -49,24 +49,59 @@ function App() {
         throw new Error('Network response was not ok')
       }
       const data = await response.json()
-      console.log("Upload successful", data)
-      // Optionally, show a notification or update state here
+      console.log('Upload successful', data)
     } catch (error) {
-      console.error("Error uploading file:", error)
+      console.error('Error uploading file:', error)
     }
+  }
+
+  const handleLike = (tweetId) => {
+    setLikedTweets((prev) => {
+      if (prev.includes(tweetId)) {
+        // Toggle off if already liked
+        return prev.filter(id => id !== tweetId)
+      } else {
+        // Add to liked list and remove from disliked if present
+        setDislikedTweets((prevDisliked) => prevDisliked.filter(id => id !== tweetId))
+        return [...prev, tweetId]
+      }
+    })
+  }
+
+  const handleDislike = (tweetId) => {
+    setDislikedTweets((prev) => {
+      if (prev.includes(tweetId)) {
+        // Toggle off if already disliked
+        return prev.filter(id => id !== tweetId)
+      } else {
+        // Add to disliked list and remove from liked if present
+        setLikedTweets((prevLiked) => prevLiked.filter(id => id !== tweetId))
+        return [...prev, tweetId]
+      }
+    })
   }
 
   return (
     <ThemeProvider>
       <div className="font-sans min-h-screen bg-gray-50 dark:bg-neutral-950">
-        <header className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-800">
+        <header className="flex items-center justify-between border-b p-4 border-gray-200 dark:border-gray-800">
           <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
             Twitter Slop
           </h1>
           <div className="flex items-center gap-2">
             <DarkModeToggle />
-            <Button onClick={generateFakeTweet}>Generate Fake Tweet</Button>
-            <Button variant="outline" onClick={handleOpenFileDialog}>
+            <Button 
+              variant="outline"
+              onClick={generateFakeTweet}
+              className="bg-white text-gray-800 border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
+            >
+              Generate Fake Tweet
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleOpenFileDialog}
+              className="border border-gray-300 text-gray-800 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
+            >
               <Upload className="h-4 w-4" />
               <span>Upload Image</span>
             </Button>
@@ -82,10 +117,16 @@ function App() {
         </header>
         <main className="mx-auto w-full max-w-xl p-4">
           {tweetPair ? (
-            // Your tweet pair side–by–side UI can go here if needed
             <div>Tweet Pair UI</div>
           ) : (
-            <TweetList tweets={tweets} generateFakeTweet={generateFakeTweet} />
+            <TweetList 
+              tweets={tweets} 
+              generateFakeTweet={generateFakeTweet}
+              onLike={handleLike}
+              onDislike={handleDislike}
+              likedTweets={likedTweets}
+              dislikedTweets={dislikedTweets}
+            />
           )}
         </main>
       </div>

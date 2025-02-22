@@ -1,54 +1,23 @@
 // src/components/Tweet.js
 import React from 'react'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '../ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card'
 import { Avatar } from '../ui/avatar'
 import { ThumbsUp, ThumbsDown, MessageSquare } from 'lucide-react'
+import { cn } from '../lib/utils' // if you have a utility for merging classes
 
-function Tweet({ tweetData, generateFakeTweet }) {
+function Tweet({ tweetData, generateFakeTweet, onLike, onDislike, likedTweets, dislikedTweets }) {
   const { username = 'ben brooks', content = '' } = tweetData
 
-  const handleLike = async () => {
-    try {
-        const response = await fetch(`http://localhost:8000/like_tweet/${tweetData.tweet_id}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ tweetId: tweetData.id }),
-        });
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const result = await response.json();
-        await generateFakeTweet();
-    } catch (error) {
-        console.error('Error liking the tweet:', error);
-    }
-  };
+  const isLiked = likedTweets.includes(tweetData.tweet_id)
+  const isDisliked = dislikedTweets.includes(tweetData.tweet_id)
 
-  const handleDislike = async () => {
-    try {
-        const response = await fetch(`http://localhost:8000/dislike_tweet/${tweetData.tweet_id}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const result = await response.json();
-        await generateFakeTweet();
-    } catch (error) {
-        console.error('Error disliking the tweet:', error);
-    }
-  };
+  const handleLike = () => {
+    onLike(tweetData.tweet_id)
+  }
+
+  const handleDislike = () => {
+    onDislike(tweetData.tweet_id)
+  }
 
   return (
     <Card className="animate-fadeIn">
@@ -60,9 +29,7 @@ function Tweet({ tweetData, generateFakeTweet }) {
           />
           <div>
             <CardTitle>{username}</CardTitle>
-            <CardDescription>
-              @{username.replace(/\s+/g, '').toLowerCase()}
-            </CardDescription>
+            <CardDescription>@{username.replace(/\s+/g, '').toLowerCase()}</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -70,47 +37,48 @@ function Tweet({ tweetData, generateFakeTweet }) {
       <CardContent>
         <p className="mb-4">{content}</p>
         <div className="flex gap-2">
-          {/**
-           * Borderless buttons with color that adapts to light/dark mode.
-           * text-gray-700 in light mode, text-gray-200 in dark mode.
-           * Icons inherit that color. They also scale on hover.
-           */}
-          <button 
+          {/* Like Button */}
+          <button
             onClick={handleLike}
-            className="
-            flex items-center gap-1 p-2 
-            bg-transparent border-none 
-            text-gray-700 dark:text-gray-200 
-            transition-transform duration-200 
-            hover:scale-110 
-            focus:outline-none
-          ">
+            className={cn(
+              "flex items-center gap-1 p-2 rounded-md transition-transform duration-200 hover:scale-110 focus:outline-none",
+              // Active (Liked) State
+              isLiked
+                ? "border-blue-500 text-blue-500 dark:text-blue-400 dark:border-blue-400"
+                // Inactive State
+                : "border-gray-300 text-gray-700 dark:text-gray-200 dark:border-gray-700"
+            )}
+          >
             <ThumbsUp className="h-4 w-4" />
             <span>Like</span>
           </button>
 
-          <button 
+          {/* Dislike Button */}
+          <button
             onClick={handleDislike}
-          className="
-            flex items-center gap-1 p-2 
-            bg-transparent border-none 
-            text-gray-700 dark:text-gray-200 
-            transition-transform duration-200 
-            hover:scale-110 
-            focus:outline-none
-          ">
+            className={cn(
+              "flex items-center gap-1 p-2 rounded-md transition-transform duration-200 hover:scale-110 focus:outline-none",
+              // Active (Disliked) State
+              isDisliked
+                ? "border-blue-500 text-blue-500 dark:text-blue-400 dark:border-blue-400"
+                // Inactive State
+                : "border-gray-300 text-gray-700 dark:text-gray-200 dark:border-gray-700"
+            )}
+          >
             <ThumbsDown className="h-4 w-4" />
             <span>Dislike</span>
           </button>
 
-          <button className="
-            flex items-center gap-1 p-2 
-            bg-transparent border-none 
-            text-gray-700 dark:text-gray-200 
-            transition-transform duration-200 
-            hover:scale-110 
-            focus:outline-none
-          ">
+          {/* Reply Button (unchanged) */}
+          <button
+            className="
+              flex items-center gap-1 p-2 
+              bg-transparent border-none 
+              text-gray-700 dark:text-gray-200 
+              transition-transform duration-200 
+              hover:scale-110 focus:outline-none
+            "
+          >
             <MessageSquare className="h-4 w-4" />
             <span>Reply</span>
           </button>
