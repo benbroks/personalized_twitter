@@ -9,8 +9,9 @@ import './App.scss'
 function App() {
   const [tweets, setTweets] = useState([])
   const [tweetPair, setTweetPair] = useState(null)
-  const [likedTweets, setLikedTweets] = useState([])       // array of tweet_ids that are liked
-  const [dislikedTweets, setDislikedTweets] = useState([]) // array of tweet_ids that are disliked
+  const [likedTweets, setLikedTweets] = useState([])
+  const [dislikedTweets, setDislikedTweets] = useState([])
+  const [hasUploadedImage, setHasUploadedImage] = useState(false)
   const fileInputRef = useRef(null)
 
   const generateFakeTweet = async () => {
@@ -50,6 +51,8 @@ function App() {
       }
       const data = await response.json()
       console.log('Upload successful', data)
+      // When the image uploads successfully, update our flag.
+      setHasUploadedImage(true)
     } catch (error) {
       console.error('Error uploading file:', error)
     }
@@ -58,11 +61,11 @@ function App() {
   const handleLike = (tweetId) => {
     setLikedTweets((prev) => {
       if (prev.includes(tweetId)) {
-        // Toggle off if already liked
-        return prev.filter(id => id !== tweetId)
+        return prev.filter((id) => id !== tweetId)
       } else {
-        // Add to liked list and remove from disliked if present
-        setDislikedTweets((prevDisliked) => prevDisliked.filter(id => id !== tweetId))
+        setDislikedTweets((prevDisliked) =>
+          prevDisliked.filter((id) => id !== tweetId)
+        )
         return [...prev, tweetId]
       }
     })
@@ -71,11 +74,11 @@ function App() {
   const handleDislike = (tweetId) => {
     setDislikedTweets((prev) => {
       if (prev.includes(tweetId)) {
-        // Toggle off if already disliked
-        return prev.filter(id => id !== tweetId)
+        return prev.filter((id) => id !== tweetId)
       } else {
-        // Add to disliked list and remove from liked if present
-        setLikedTweets((prevLiked) => prevLiked.filter(id => id !== tweetId))
+        setLikedTweets((prevLiked) =>
+          prevLiked.filter((id) => id !== tweetId)
+        )
         return [...prev, tweetId]
       }
     })
@@ -90,21 +93,26 @@ function App() {
           </h1>
           <div className="flex items-center gap-2">
             <DarkModeToggle />
-            <Button 
+            {hasUploadedImage && (
+              <Button
+                variant="outline"
+                onClick={generateFakeTweet}
+                className="border border-gray-300 text-gray-800 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
+                >
+                Sloppy Slop
+              </Button>
+            )}
+            {!hasUploadedImage && (
+
+            <Button
               variant="outline"
-              onClick={generateFakeTweet}
-              className="bg-white text-gray-800 border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-            >
-              Generate Fake Tweet
-            </Button>
-            <Button 
-              variant="outline" 
               onClick={handleOpenFileDialog}
               className="border border-gray-300 text-gray-800 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
             >
               <Upload className="h-4 w-4" />
               <span>Upload Image</span>
             </Button>
+            )}
             {/* Hidden file input */}
             <input
               type="file"
@@ -116,17 +124,19 @@ function App() {
           </div>
         </header>
         <main className="mx-auto w-full max-w-xl p-4">
-          {tweetPair ? (
-            <div>Tweet Pair UI</div>
-          ) : (
-            <TweetList 
-              tweets={tweets} 
+          {hasUploadedImage ? (
+            <TweetList
+              tweets={tweets}
               generateFakeTweet={generateFakeTweet}
               onLike={handleLike}
               onDislike={handleDislike}
               likedTweets={likedTweets}
               dislikedTweets={dislikedTweets}
             />
+          ) : (
+            <p className="text-center text-gray-500 dark:text-gray-400">
+              Upload an image to start Slopping
+            </p>
           )}
         </main>
       </div>

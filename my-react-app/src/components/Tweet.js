@@ -60,27 +60,13 @@ function Tweet({ tweetData, generateFakeTweet, onLike, onDislike, likedTweets, d
               "flex items-center gap-1 p-2 rounded-md transition-transform duration-200 hover:scale-110 focus:outline-none",
               // Active (Disliked) State
               isDisliked
-                ? "border-blue-500 text-blue-500 dark:text-blue-400 dark:border-blue-400"
+                ? "border-red-500 text-red-500 dark:text-red-400 dark:border-red-400"
                 // Inactive State
                 : "border-gray-300 text-gray-700 dark:text-gray-200 dark:border-gray-700"
             )}
           >
             <ThumbsDown className="h-4 w-4" />
             <span>Dislike</span>
-          </button>
-
-          {/* Reply Button (unchanged) */}
-          <button
-            className="
-              flex items-center gap-1 p-2 
-              bg-transparent border-none 
-              text-gray-700 dark:text-gray-200 
-              transition-transform duration-200 
-              hover:scale-110 focus:outline-none
-            "
-          >
-            <MessageSquare className="h-4 w-4" />
-            <span>Reply</span>
           </button>
         </div>
       </CardContent>
