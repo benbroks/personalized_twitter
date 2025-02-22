@@ -30,6 +30,9 @@ async def startup_event():
     app.state.disliked_tweets = set()
     app.state.tweets = {}
 
+def assemble_interaction_history():
+    
+
 @app.post("/like_tweet/{tweet_id}")
 async def like_tweet(tweet_id: str):
     try:
