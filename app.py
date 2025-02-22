@@ -132,7 +132,7 @@ async def generate_fake_tweet_pair():
 
     tweet_id = str(uuid.uuid4())
     content = json.loads(completion.choices[0].message.content)
-    tweet_object = Tweet(username="ben brooks", content=content["tweet_1"], tweet_id=tweet_id)
+    tweet_object = Tweet(username="ben brooks", content=content, tweet_id=tweet_id)
     app.state.tweets[tweet_id] = tweet_object
     return tweet_object
 
