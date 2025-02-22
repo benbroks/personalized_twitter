@@ -3,15 +3,18 @@ import { ThemeProvider } from './ThemeProvider'
 import DarkModeToggle from './components/DarkModeToggle'
 import TweetList from './components/Tweetlist'
 import { Button } from './ui/button'
-import { Upload } from 'lucide-react'
+import { Upload, Loader2 } from 'lucide-react'
 import './App.scss'
+import TVAnimation from './components/TVAnimation'
+
 
 function App() {
   const [tweets, setTweets] = useState([])
-  const [tweetPair, setTweetPair] = useState(null)
+  const [showAnimation, setShowAnimation] = useState(true)
   const [likedTweets, setLikedTweets] = useState([])
   const [dislikedTweets, setDislikedTweets] = useState([])
   const [hasUploadedImage, setHasUploadedImage] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef(null)
 
   const generateFakeTweet = async () => {
@@ -30,6 +33,10 @@ function App() {
     }
   }
 
+  const handleAnimationComplete = () => {
+    setShowAnimation(false)
+  }
+
   const handleOpenFileDialog = () => {
     fileInputRef.current && fileInputRef.current.click()
   }
@@ -37,6 +44,8 @@ function App() {
   const handleFileUpload = async (event) => {
     const file = event.target.files[0]
     if (!file) return
+
+    setIsUploading(true)
 
     const formData = new FormData()
     formData.append('file', file)
@@ -51,10 +60,11 @@ function App() {
       }
       const data = await response.json()
       console.log('Upload successful', data)
-      // When the image uploads successfully, update our flag.
       setHasUploadedImage(true)
     } catch (error) {
       console.error('Error uploading file:', error)
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -86,6 +96,8 @@ function App() {
 
   return (
     <ThemeProvider>
+      {showAnimation && <TVAnimation onAnimationComplete={handleAnimationComplete} />}
+
       <div className="font-sans min-h-screen bg-gray-50 dark:bg-neutral-950">
         <header className="flex items-center justify-between border-b p-4 border-gray-200 dark:border-gray-800">
           <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
@@ -98,20 +110,19 @@ function App() {
                 variant="outline"
                 onClick={generateFakeTweet}
                 className="border border-gray-300 text-gray-800 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
-                >
+              >
                 Sloppy Slop
               </Button>
             )}
             {!hasUploadedImage && (
-
-            <Button
-              variant="outline"
-              onClick={handleOpenFileDialog}
-              className="border border-gray-300 text-gray-800 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-            >
-              <Upload className="h-4 w-4" />
-              <span>Upload Image</span>
-            </Button>
+              <Button
+                variant="outline"
+                onClick={handleOpenFileDialog}
+                className="border border-gray-300 text-gray-800 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Upload Image</span>
+              </Button>
             )}
             {/* Hidden file input */}
             <input
@@ -124,7 +135,12 @@ function App() {
           </div>
         </header>
         <main className="mx-auto w-full max-w-xl p-4">
-          {hasUploadedImage ? (
+          {isUploading ? (
+            <div className="flex items-center justify-center space-x-2">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+              <span className="text-gray-500 dark:text-gray-400">Uploading image...</span>
+            </div>
+          ) : hasUploadedImage ? (
             <TweetList
               tweets={tweets}
               generateFakeTweet={generateFakeTweet}
