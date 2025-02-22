@@ -9,9 +9,62 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import base64
 
+CONVERSATION_TOPICS = [
+    "Travel Experiences",
+    "Favorite Books or Authors",
+    "Hobbies and Interests",
+    "Food Culture",
+    "Technology Trends",
+    "Environmental Issues",
+    "Sports News and Events",
+    "Personal Growth Goals",
+    "Historical Events or Figures",
+    "Artistic Influences",
+    "Future Career Aspirations",
+    "Cultural Festivals Around the World",
+    "Innovative Startups",
+    "Mental Health Awareness",
+    "Space Exploration Updates",
+    "Social Media Impact on Society",
+    "Fitness Routines",
+    ".NET Framework vs Java",
+    "AI Ethics Discussions",
+    "Local Community Projects",
+    "Pet Care Tips",
+    "Philosophical Questions",
+    "Upcoming Movie Releases",
+    "Language Learning Experiences",
+    "Gaming Industry Developments"
+]
 
-COLD_START_PROMPT = "Generate an extremely unique tweet that is meant to garner a reaction (either positive or negative). Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end."
-COLD_START_PROMPT_PAIR = "Generate two tweets that are extremely different from each other. Keep them under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end of them."
+TONE_LIST = [
+    "Amused",
+    "Accusatory",
+    "Angry",
+    "Apathetic",
+    "Apologetic",
+    "Absurd",
+    "Ambivalent",
+    "Optimistic",
+    "Acerbic",
+    "Adoring",
+    "Anxious",
+    "Ardent",
+    "Abashed",
+    "Admiring",
+    "Animated",
+    "Appreciative",
+    "Assertive",
+    "Bitter",
+    "Calm",
+    "Formal",
+    "Humorous",
+    "Informal",
+    "Pessimistic",
+    "Aggressive"
+]
+
+
 load_dotenv()
 open_ai_key = os.getenv("OPEN_AI_KEY")
 client = OpenAI(api_key=open_ai_key)
@@ -52,27 +105,32 @@ async def startup_event():
 
 
 def warm_prompt():
-    system_prompt = """
-Generate an extremely unique tweet that is meant to garner a reaction (either positive or negative). It should be tailored to the interests of the user, as described below. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS.
-"""
+    import random
+    random_topic = random.choice(CONVERSATION_TOPICS)
+    random_tone = random.choice(TONE_LIST)
+    system_prompt = f"""
+Generate a controversial tweet about {random_topic} in a {random_tone} tone through the lens of the user's interests as described below. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. DO NOT END THE TWEET WITH A QUESTION. DO NOT START THE TWEET WITH 'just'.
 
-    liked_tweets = "\n".join(
-        [f"- {app.state.tweets[t].content}" for t in app.state.liked_tweets]
-    )
+The tweet's uniqueness should be with respect to the tweet's listed below (if they exist).
+    """
 
-    disliked_tweets = "\n".join(
-        [f"- {app.state.tweets[t].content}" for t in app.state.disliked_tweets]
-    )
+    transformed_tweets = []
+    for id, v in app.state.tweets.items():
+        if id in app.state.liked_tweets:
+            transformed_tweets.append(f"- [USER LIKED] {v.content}")
+        elif id in app.state.disliked_tweets:
+            transformed_tweets.append(f"- [USER DISLIKED] {v.content}")
+        else:
+            transformed_tweets.append(f"- {v.content}")
+    compiled_tweets = "\n".join(transformed_tweets)
 
     if app.state.user_description:
         system_prompt += (
             f"\n<user_description>{app.state.user_description}\n</user_description>"
         )
-
-    if len(liked_tweets) > 0:
-        system_prompt += f"\n<liked_tweets>\n{liked_tweets}\n</liked_tweets>"
-    if len(disliked_tweets) > 0:
-        system_prompt += f"\n<disliked_tweets>\n{disliked_tweets}\n</disliked_tweets>"
+    
+    if len(compiled_tweets) > 0:
+        system_prompt += f"\n<former_tweets>\n{compiled_tweets}\n</former_tweets>"
 
     return system_prompt
 
@@ -131,7 +189,6 @@ async def like_tweet(tweet_id: str):
         app.state.liked_tweets.add(tweet_id)
         if tweet_id in app.state.disliked_tweets:
             app.state.disliked_tweets.remove(tweet_id)
-        print(warm_prompt())
         return {"tweet_id": tweet_id, "success": True}
     except Exception:
         return {"tweet_id": tweet_id, "success": False}
@@ -143,19 +200,15 @@ async def dislike_tweet(tweet_id: str):
         app.state.disliked_tweets.add(tweet_id)
         if tweet_id in app.state.liked_tweets:
             app.state.liked_tweets.remove(tweet_id)
-        print(warm_prompt())
         return {"tweet_id": tweet_id, "success": True}
     except Exception:
         return {"tweet_id": tweet_id, "success": False}
 
 
 @app.get("/generate_fake_tweet", response_model=Tweet)
-async def generate_fake_tweet():
+async def generate_fake_tweet():    
     prompt = warm_prompt()
-    # if len(app.state.tweets) < 5:
-    #     prompt = COLD_START_PROMPT
-    # else:
-    #     prompt = warm_prompt()
+    print(prompt)
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -175,10 +228,7 @@ async def generate_fake_tweet():
 
 @app.get("/generate_fake_tweet_pair", response_model=Tweet)
 async def generate_fake_tweet_pair():
-    if len(app.state.tweets) < 5:
-        prompt = COLD_START_PROMPT_PAIR
-    else:
-        prompt = warm_prompt()
+    prompt = warm_prompt()
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-mini-2024-07-18",
         messages=[
