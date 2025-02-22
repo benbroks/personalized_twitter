@@ -12,7 +12,7 @@ function App() {
                 throw new Error('Network response was not ok');
             }
             const tweet = await response.json();
-            setTweets([...tweets, tweet]);
+            setTweets([tweet, ...tweets]);
         } catch (error) {
             console.error('Error fetching the tweet:', error);
         }
