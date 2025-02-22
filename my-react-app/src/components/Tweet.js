@@ -15,7 +15,6 @@ function Tweet({ tweetData, generateFakeTweet }) {
 
   const handleLike = async () => {
     try {
-      console.log("in handle like");
         const response = await fetch(`http://localhost:8000/like_tweet/${tweetData.tweet_id}`, {
             method: 'POST',
             headers: {

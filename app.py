@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
@@ -7,7 +7,7 @@ import json
 import os
 from dotenv import load_dotenv
 
-COLD_START_PROMPT = "Generate an extremely unique tweet. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end."
+COLD_START_PROMPT = "Generate an extremely unique tweet that is meant to garner a reaction (either positive or negative). Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end."
 COLD_START_PROMPT_PAIR =  "Generate two tweets that are extremely different from each other. Keep them under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end of them."
 load_dotenv()
 open_ai_key = os.getenv("OPEN_AI_KEY")
@@ -37,6 +37,7 @@ async def startup_event():
     app.state.liked_tweets = set()
     app.state.disliked_tweets = set()
     app.state.tweets = {}
+    app.state.user_description = None
 
 def warm_prompt():
     system_prompt = """
@@ -52,13 +53,46 @@ Check out a list of example liked and disliked tweets to cater to the user. With
         f"- {app.state.tweets[t].content}" for t in app.state.disliked_tweets
     ])
 
+    if app.state.user_description:
+        system_prompt += f"\n<user_description>{app.state.user_description}\n</user_description>"
+
     if len(liked_tweets) > 0:
-        system_prompt += f"\nLIKED TWEETS:\n{liked_tweets}"
+        system_prompt += f"\n<liked_tweets>\n{liked_tweets}\n</liked_tweets>"
     if len(disliked_tweets) > 0:
-        system_prompt += f"\nDISLIKED TWEETS\n{disliked_tweets}"
+        system_prompt += f"\n<disliked_tweets>\n{disliked_tweets}\n</disliked_tweets>"
 
     return system_prompt
 
+@app.post("/submit_photo")
+async def submit_photo(file: UploadFile = File(...)):
+    try:
+        # Save the uploaded file to a directory
+        file_location = f"uploads/{file.filename}"
+        with open(file_location, "wb") as buffer:
+            buffer.write(await file.read())
+
+        # Call OpenAI to summarize the picture
+        with open(file_location, "rb") as image_file:
+            image_data = image_file.read()
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {
+                        "role": "user",
+                        "content": "Based on this photo, write a paragraph description about the person who submitted it.",
+                        "image": image_data
+                    }
+                ],
+                temperature=0.5
+            )
+            summary = completion.choices[0].message.content
+            app.state.user_description = summary
+
+        # Return a success response with the summary
+        return {"filename": file.filename, "summary": summary, "success": True}
+    except Exception as e:
+        return {"error": str(e), "success": False}
 
 
 @app.post("/like_tweet/{tweet_id}")
