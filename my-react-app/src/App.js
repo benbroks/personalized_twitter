@@ -107,7 +107,7 @@ function App() {
             <Button
               variant="outline"
               onClick={handleOpenFileDialog}
-              className="border border-gray-300 text-gray-800 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
+              className="border border-gray-300 text-gray-800 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
             >
               <Upload className="h-4 w-4" />
               <span>Upload Image</span>
