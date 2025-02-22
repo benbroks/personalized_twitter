@@ -24,7 +24,7 @@ function App() {
             <button onClick={generateFakeTweet}>Generate Fake Tweet</button>
             <div>
                 {tweets.map((tweet, index) => (
-                    <Tweet key={index} tweetData={tweet} />
+                    <Tweet key={index} tweetData={tweet} generateFakeTweet={generateFakeTweet} />
                 ))}
             </div>
         </div>
