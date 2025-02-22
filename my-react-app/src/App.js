@@ -7,11 +7,12 @@ function App() {
 
     const generateFakeTweet = async () => {
         try {
-            const response = await fetch('http://localhost:8000/generate_fake_tweet');
+            const response = await fetch('http://localhost:8000/generate_fake_tweet_pair');
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             const tweet = await response.json();
+            console.log(tweet);
             setTweets(tweets.length === 5 ? [tweet, ...tweets.slice(0, -1)] : [tweet, ...tweets]);
         } catch (error) {
             console.error('Error fetching the tweet:', error);
