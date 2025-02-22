@@ -11,8 +11,6 @@ class Tweet(BaseModel):
     content: str
     tweet_id: str
 
-
-
 load_dotenv()
 open_ai_key = os.getenv("OPEN_AI_KEY")
 
