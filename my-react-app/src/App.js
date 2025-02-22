@@ -5,12 +5,10 @@ import TweetList from './components/Tweetlist'
 import { Button } from './ui/button'
 import { Upload, Loader2 } from 'lucide-react'
 import './App.scss'
-import TVAnimation from './components/TVAnimation'
 
 
 function App() {
   const [tweets, setTweets] = useState([])
-  const [showAnimation, setShowAnimation] = useState(true)
   const [likedTweets, setLikedTweets] = useState([])
   const [dislikedTweets, setDislikedTweets] = useState([])
   const [hasUploadedImage, setHasUploadedImage] = useState(false)
@@ -33,9 +31,6 @@ function App() {
     }
   }
 
-  const handleAnimationComplete = () => {
-    setShowAnimation(false)
-  }
 
   const handleOpenFileDialog = () => {
     fileInputRef.current && fileInputRef.current.click()
@@ -96,7 +91,6 @@ function App() {
 
   return (
     <ThemeProvider>
-      {showAnimation && <TVAnimation onAnimationComplete={handleAnimationComplete} />}
 
       <div className="font-sans min-h-screen bg-gray-50 dark:bg-neutral-950">
         <header className="flex items-center justify-between border-b p-4 border-gray-200 dark:border-gray-800">
@@ -111,7 +105,7 @@ function App() {
                 onClick={generateFakeTweet}
                 className="border border-gray-300 text-gray-800 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
               >
-                Sloppy Slop
+                Generate Fake Tweet
               </Button>
             )}
             {!hasUploadedImage && (
