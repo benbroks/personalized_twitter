@@ -11,12 +11,43 @@ function Tweet({ tweetData, generateFakeTweet, onLike, onDislike, likedTweets, d
   const isLiked = likedTweets.includes(tweetData.tweet_id)
   const isDisliked = dislikedTweets.includes(tweetData.tweet_id)
 
-  const handleLike = () => {
+  const handleLike = async () => {
     onLike(tweetData.tweet_id)
+    try {
+        const response = await fetch(`http://localhost:8000/like_tweet/${tweetData.tweet_id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ tweetId: tweetData.id }),
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const result = await response.json();
+        await generateFakeTweet();
+    } catch (error) {
+        console.error('Error liking the tweet:', error);
+    }
   }
 
-  const handleDislike = () => {
+  const handleDislike = async () => {
     onDislike(tweetData.tweet_id)
+    try {
+        const response = await fetch(`http://localhost:8000/dislike_tweet/${tweetData.tweet_id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const result = await response.json();
+        await generateFakeTweet();
+    } catch (error) {
+        console.error('Error disliking the tweet:', error);
+    }
   }
 
   return (
