@@ -53,8 +53,7 @@ async def startup_event():
 
 def warm_prompt():
     system_prompt = """
-Generate a unique tweet that is tailored to the interests of the user. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS.
-Check out a list of example liked and disliked tweets to cater to the user. With 10% probability, please generate something completely different from the likes and dislikes.
+Generate an extremely unique tweet that is meant to garner a reaction (either positive or negative). It should be tailored to the interests of the user, as described below. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS.
 """
 
     liked_tweets = "\n".join(
@@ -152,10 +151,11 @@ async def dislike_tweet(tweet_id: str):
 
 @app.get("/generate_fake_tweet", response_model=Tweet)
 async def generate_fake_tweet():
-    if len(app.state.tweets) < 5:
-        prompt = COLD_START_PROMPT
-    else:
-        prompt = warm_prompt()
+    prompt = warm_prompt()
+    # if len(app.state.tweets) < 5:
+    #     prompt = COLD_START_PROMPT
+    # else:
+    #     prompt = warm_prompt()
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
