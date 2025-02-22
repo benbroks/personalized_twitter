@@ -1,13 +1,10 @@
 // Tweet.js
 import React, { useState } from 'react';
 
-function Tweet({ tweetData }) {
-    const [likes, setLikes] = useState(tweetData.likes || 0);
-    const [dislikes, setDislikes] = useState(tweetData.dislikes || 0);
-
+function Tweet({ tweetData, generateFakeTweet }) {
     const handleLike = async () => {
         try {
-            const response = await fetch('http://localhost:8000/like_tweet', {
+            const response = await fetch(`http://localhost:8000/like_tweet/${tweetData.tweet_id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -18,7 +15,7 @@ function Tweet({ tweetData }) {
                 throw new Error('Network response was not ok');
             }
             const result = await response.json();
-            setLikes(result.likes);
+            await generateFakeTweet();
         } catch (error) {
             console.error('Error liking the tweet:', error);
         }
@@ -26,18 +23,17 @@ function Tweet({ tweetData }) {
 
     const handleDislike = async () => {
         try {
-            const response = await fetch('http://localhost:8000/dislike_tweet', {
+            const response = await fetch(`http://localhost:8000/dislike_tweet/${tweetData.tweet_id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ tweetId: tweetData.id }),
             });
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             const result = await response.json();
-            setDislikes(result.dislikes);
+            await generateFakeTweet();
         } catch (error) {
             console.error('Error disliking the tweet:', error);
         }

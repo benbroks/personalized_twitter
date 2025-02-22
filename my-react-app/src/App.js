@@ -43,7 +43,7 @@ function App() {
         </header>
 
         <main className="mx-auto w-full max-w-xl p-4">
-          <TweetList tweets={tweets} />
+          <TweetList tweets={tweets} generateFakeTweet={generateFakeTweet}/>
         </main>
       </div>
     </ThemeProvider>

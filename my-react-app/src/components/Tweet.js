@@ -10,8 +10,46 @@ import {
 import { Avatar } from '../ui/avatar'
 import { ThumbsUp, ThumbsDown, MessageSquare } from 'lucide-react'
 
-function Tweet({ tweetData }) {
+function Tweet({ tweetData, generateFakeTweet }) {
   const { username = 'ben brooks', content = '' } = tweetData
+
+  const handleLike = async () => {
+    try {
+      console.log("in handle like");
+        const response = await fetch(`http://localhost:8000/like_tweet/${tweetData.tweet_id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ tweetId: tweetData.id }),
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const result = await response.json();
+        await generateFakeTweet();
+    } catch (error) {
+        console.error('Error liking the tweet:', error);
+    }
+  };
+
+  const handleDislike = async () => {
+    try {
+        const response = await fetch(`http://localhost:8000/dislike_tweet/${tweetData.tweet_id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const result = await response.json();
+        await generateFakeTweet();
+    } catch (error) {
+        console.error('Error disliking the tweet:', error);
+    }
+  };
 
   return (
     <Card className="animate-fadeIn">
@@ -38,7 +76,9 @@ function Tweet({ tweetData }) {
            * text-gray-700 in light mode, text-gray-200 in dark mode.
            * Icons inherit that color. They also scale on hover.
            */}
-          <button className="
+          <button 
+            onClick={handleLike}
+            className="
             flex items-center gap-1 p-2 
             bg-transparent border-none 
             text-gray-700 dark:text-gray-200 
@@ -50,7 +90,9 @@ function Tweet({ tweetData }) {
             <span>Like</span>
           </button>
 
-          <button className="
+          <button 
+            onClick={handleDislike}
+          className="
             flex items-center gap-1 p-2 
             bg-transparent border-none 
             text-gray-700 dark:text-gray-200 

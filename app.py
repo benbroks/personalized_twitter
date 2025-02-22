@@ -3,16 +3,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 import uuid
+import json
 import os
 from dotenv import load_dotenv
+
+COLD_START_PROMPT = "Generate an extremely unique tweet. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end."
+COLD_START_PROMPT_PAIR =  "Generate two tweets that are extremely different from each other. Keep them under 280 characters. DO NOT INCLUDE HASHTAGS. I'd prefer if you didn't include a question at the end of them."
+load_dotenv()
+open_ai_key = os.getenv("OPEN_AI_KEY")
+client = OpenAI(api_key=open_ai_key)
 
 class Tweet(BaseModel):
     username: str
     content: str
     tweet_id: str
 
-load_dotenv()
-open_ai_key = os.getenv("OPEN_AI_KEY")
+class TweetPair(BaseModel):
+    tweet_1: str
+    tweet_2: str
 
 app = FastAPI()
 
@@ -30,6 +38,28 @@ async def startup_event():
     app.state.disliked_tweets = set()
     app.state.tweets = {}
 
+def warm_prompt():
+    system_prompt = """
+Generate a unique tweet that is tailored to the interests of the user. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS.
+Check out a list of example liked and disliked tweets to cater to the user. With 10% probability, please generate something completely different from the likes and dislikes.
+"""
+
+    liked_tweets = "\n".join([
+        f"- {app.state.tweets[t].content}" for t in app.state.liked_tweets
+    ])
+
+    disliked_tweets = "\n".join([
+        f"- {app.state.tweets[t].content}" for t in app.state.disliked_tweets
+    ])
+
+    if len(liked_tweets) > 0:
+        system_prompt += f"\nLIKED TWEETS:\n{liked_tweets}"
+    if len(disliked_tweets) > 0:
+        system_prompt += f"\nDISLIKED TWEETS\n{disliked_tweets}"
+
+    return system_prompt
+
+
 
 @app.post("/like_tweet/{tweet_id}")
 async def like_tweet(tweet_id: str):
@@ -37,6 +67,7 @@ async def like_tweet(tweet_id: str):
         app.state.liked_tweets.add(tweet_id)
         if tweet_id in app.state.disliked_tweets:
             app.state.disliked_tweets.remove(tweet_id)
+        print(warm_prompt())
         return {"tweet_id": tweet_id, "success": True}
     except Exception:
         return {"tweet_id": tweet_id, "success": False}
@@ -47,6 +78,7 @@ async def dislike_tweet(tweet_id: str):
         app.state.disliked_tweets.add(tweet_id)
         if tweet_id in app.state.liked_tweets:
             app.state.liked_tweets.remove(tweet_id)
+        print(warm_prompt())
         return {"tweet_id": tweet_id, "success": True}
     except Exception:
         return {"tweet_id": tweet_id, "success": False}
@@ -55,17 +87,20 @@ async def dislike_tweet(tweet_id: str):
 
 @app.get("/generate_fake_tweet", response_model=Tweet)
 async def generate_fake_tweet():
-
-    client = OpenAI(api_key=open_ai_key)
+    if len(app.state.tweets) < 5:
+        prompt = COLD_START_PROMPT
+    else:
+        prompt = warm_prompt()
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {
                 "role": "user",
-                "content": "write a really funny tweet! it should be under 280 characters. don't include hashtags!"
+                "content": prompt
             }
-        ]
+        ],
+        temperature=1.0
     )
     print(completion)
 
@@ -74,5 +109,32 @@ async def generate_fake_tweet():
     tweet_object = Tweet(username="ben brooks", content=content, tweet_id=tweet_id)
     app.state.tweets[tweet_id] = tweet_object
     return tweet_object
+
+@app.get("/generate_fake_tweet_pair", response_model=Tweet)
+async def generate_fake_tweet_pair():
+    if len(app.state.tweets) < 5:
+        prompt = COLD_START_PROMPT_PAIR
+    else:
+        prompt = warm_prompt()
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o-mini-2024-07-18",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        response_format=TweetPair,
+        temperature=1.0
+    )
+    print(completion.choices[0].message.content)
+
+    tweet_id = str(uuid.uuid4())
+    content = json.loads(completion.choices[0].message.content)
+    tweet_object = Tweet(username="ben brooks", content=content["tweet_1"], tweet_id=tweet_id)
+    app.state.tweets[tweet_id] = tweet_object
+    return tweet_object
+
 
 
