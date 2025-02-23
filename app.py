@@ -110,9 +110,9 @@ def warm_prompt():
     random_topic = random.choice(CONVERSATION_TOPICS)
     random_tone = random.choice(TONE_LIST)
     system_prompt = f"""
-Generate a controversial tweet through the lens of the user's interests as described below. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. DO NOT END THE TWEET WITH A QUESTION. DO NOT START THE TWEET WITH 'just'.
+Generate a unique, controversial tweet through the lens of the user's interests as described below. Keep it under 280 characters. DO NOT INCLUDE HASHTAGS. DO NOT END THE TWEET WITH A QUESTION. DO NOT START THE TWEET WITH 'just'.
 
-The tweet's uniqueness should be with respect to the tweet's listed below (if they exist).
+Try to keep the tweet's opinion aligned with the user description but discuss NEW concepts that weren't mentioned in the previous set of tweets.    
     """
 
     transformed_tweets = []

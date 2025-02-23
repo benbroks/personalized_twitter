@@ -149,7 +149,7 @@ function App() {
       <div className="font-sans min-h-screen bg-gray-50 dark:bg-neutral-950">
         <header className="flex items-center justify-between border-b p-4 border-gray-200 dark:border-gray-800">
           <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-            Twitter Slop
+            Personalized Twitter
           </h1>
           <div className="flex items-center gap-2">
             <DarkModeToggle />
@@ -159,7 +159,7 @@ function App() {
                 onClick={generateFakeTweet}
                 className="border border-gray-300 text-gray-800 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
               >
-                Generate Fake Tweet
+                Extend Personalized Feed
               </Button>
             )}
             {!hasUploadedImage && (
@@ -208,7 +208,7 @@ function App() {
             />
           ) : (
             <p className="text-center text-gray-500 dark:text-gray-400">
-              Upload an image to start Slopping
+              Upload an image to build your personalized twitter
             </p>
           )}
         </main>

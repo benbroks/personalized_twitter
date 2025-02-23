@@ -15,7 +15,7 @@ export default function BranchSelector({ branchTweets, onSelect }) {
   return (
     <div>
       <h2 className="mb-4 text-center text-xl font-semibold text-gray-800 dark:text-gray-100">
-        Please like one of these tweets to choose your sloppy path
+        Please like one of these tweets to choose your path
       </h2>
       <div className="flex justify-around items-center h-full">
         {branchTweets.map((tweet, index) => {
